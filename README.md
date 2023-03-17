@@ -3,7 +3,7 @@
 ___Handle your AWS Spot Instance Actions with terminate-notice___
 
 <!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
-[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors-)
+[![All Contributors](https://img.shields.io/badge/all_contributors-3-orange.svg?style=flat-square)](#contributors-)
 <!-- ALL-CONTRIBUTORS-BADGE:END -->
 
 ## Installing
@@ -42,6 +42,7 @@ This code is released under the MIT license.
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://jon.sprig.gs/"><img src="https://avatars.githubusercontent.com/u/228671?v=4?s=100" width="100px;" alt="Jon "The Nice Guy" Spriggs"/><br /><sub><b>Jon "The Nice Guy" Spriggs</b></sub></a><br /><a href="https://github.com/terminate-notice/terminate-notice/commits?author=JonTheNiceGuy" title="Code">💻</a> <a href="#ideas-JonTheNiceGuy" title="Ideas, Planning, & Feedback">🤔</a> <a href="#plugin-JonTheNiceGuy" title="Plugin/utility libraries">🔌</a> <a href="#tool-JonTheNiceGuy" title="Tools">🔧</a></td>
       <td align="center" valign="top" width="14.28%"><a href="https://about.me/nicholascross"><img src="https://avatars.githubusercontent.com/u/11463820?v=4?s=100" width="100px;" alt="mohclips"/><br /><sub><b>mohclips</b></sub></a><br /><a href="#ideas-mohclips" title="Ideas, Planning, & Feedback">🤔</a> <a href="#mentoring-mohclips" title="Mentoring">🧑‍🏫</a> <a href="#research-mohclips" title="Research">🔬</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/michalzxc"><img src="https://avatars.githubusercontent.com/u/1896427?v=4?s=100" width="100px;" alt="michalzxc"/><br /><sub><b>michalzxc</b></sub></a><br /><a href="#platform-michalzxc" title="Packaging/porting to new platform">📦</a></td>
     </tr>
   </tbody>
   <tfoot>

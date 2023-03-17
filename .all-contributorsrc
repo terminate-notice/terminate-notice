@@ -32,6 +32,15 @@
         "mentoring",
         "research"
       ]
+    },
+    {
+      "login": "michalzxc",
+      "name": "michalzxc",
+      "avatar_url": "https://avatars.githubusercontent.com/u/1896427?v=4",
+      "profile": "https://github.com/michalzxc",
+      "contributions": [
+        "platform"
+      ]
     }
   ],
   "contributorsPerLine": 7,
