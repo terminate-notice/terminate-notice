@@ -1,0 +1,16 @@
+#!/bin/sh
+if [ "$(basename "$1")" != "$(basename "$1" .md)" ] \
+    || [ "$(basename "$1")" != "$(basename "$1" .conf)" ] \
+    || [ "$(basename "$1")" != "$(basename "$1" .dir)" ]
+then
+    echo "644"
+    return 0
+fi
+case "$(dirname "$1")" in
+    etc/terminate-notice.conf.d|usr/lib/systemd/)
+    echo "644"
+    return 0
+    ;;
+esac
+echo "755"
+return 0

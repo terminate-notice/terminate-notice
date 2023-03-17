@@ -1,0 +1,114 @@
+#!/usr/bin/sh
+echo "Welcome to the terminate-notice polling service."
+echo "Version #TAG# - #TAG_DATE#"
+echo "Author: Jon Spriggs <jon@sprig.gs>"
+echo "Website: https://terminate-notice.github.io"
+
+# shellcheck disable=SC1091
+. /usr/share/terminate-notice/helpers
+
+main() {
+    _COUNTER=0
+    _MESSAGE_SENT=0
+    IMSv=2
+
+    # Unset the values about to be loaded from the config file.
+    unset metadata_service
+    unset terminate_notice_scripts
+    
+    eval "$(load_config service CORE)"
+
+    debug "CORE" Parsing METADATA_SERVICE values
+    
+    # shellcheck disable=SC2153
+    # shellcheck disable=SC2154
+    _METADATA_SERVICE="$(first_of "${METADATA_SERVICE}" "${metadata_service}" "http://169.254.169.254/latest")"
+    
+    debug "CORE" Parsing TERMINATE_NOTICE_SCRIPTS values
+
+    # shellcheck disable=SC2153
+    # shellcheck disable=SC2154
+    _TERMINATE_NOTICE_SCRIPTS="$(first_of "${TERMINATE_NOTICE_SCRIPTS}" "${terminate_notice_scripts}" "/usr/share/terminate-notice/actions")"
+
+    debug "Checking whether IMSv2 is available"
+    if curl -s -f -X PUT "${_METADATA_SERVICE}/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30" >/dev/null
+    then
+        IMSv=1
+    fi
+
+    debug "Checking whether _TERMINATE_NOTICE_SCRIPTS ($_TERMINATE_NOTICE_SCRIPTS) are available"
+    if ! cd "${_TERMINATE_NOTICE_SCRIPTS}"
+    then
+        echo "WARNING: ${_TERMINATE_NOTICE_SCRIPTS} is unreachable."
+    else
+        debug Testing scripts
+        pwd
+        printf '%s\n' ./[0-9]* | VERIFY=1 sh
+    fi
+
+    while true
+    do
+        # Ask the Metadata Service for a token with a lifetime of 21600 seconds (skip if no token yet available)
+        #                                     /--------------------------------------------------------------------- Silent (don't show download graphs)
+        #                                     |  /------------------------------------------------------------------ Fail for any 4xx and 5xx responses.
+        #                                     |  |                                                                     The service may not respond until ifup.
+        #                                     |  |   /-------------------------------------------------------------- Action (put)
+        #                                     |  |   |     /-------------------------------------------------------- URL in the metadata service
+        #                                     |  |   |     |                                /----------------------- Add this header
+        #                                     |  |   |     |                                |   /------------------- Lifetime of this token
+        if [ "$IMSv" = "1" ] || TOKEN="$(curl -s -f -X PUT "${_METADATA_SERVICE}/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30")"
+        then
+            _COUNTER=0
+            _MESSAGE_SENT=0
+            debug Checking with the Metadata Service to see whether there has been a termination notice
+            if STATUS="$(
+                if [ "$IMSv" = "2" ]
+                then
+                       # Use that token to request the status of "instance-action"
+                       # /----------------------------------------------------------------- Silent (don't show download graphs)
+                       # |  /-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                       # |  |                                                                 There will be a 404 until stop/terminate.
+                       # |  |  /----------------------------------------------------------- Add this header
+                       # |  |  |   /------------------------------------------------------- The header requested before
+                       # |  |  |   |                                  /-------------------- The metadata endpoint to identify stop/terminate.
+                    curl -s -f -H "X-aws-ec2-metadata-token: $TOKEN" "${_METADATA_SERVICE}/meta-data/spot/instance-action"
+                else 
+                    curl -s -f "${_METADATA_SERVICE}/meta-data/spot/instance-action"
+                fi
+                       # |  |  \----------------------------------------------------------- The metadata endpoint to identify stop/terminate.
+                       # |  \-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                       # |                                                                    There will be a 404 until stop/terminate.
+                       # \----------------------------------------------------------------- Silent (don't show download graphs)
+                )"
+            then
+                if echo "$STATUS" | grep -q -E "(stop|terminate)"
+                then
+                    if ! cd "${_TERMINATE_NOTICE_SCRIPTS}"
+                    then
+                        echo "Terminate Notice received: ${STATUS}"
+                        echo "Unable to access ${_TERMINATE_NOTICE_SCRIPTS}."
+                        echo "Shutting Down."
+                        sleep 5
+                        shutdown -h now
+                    else
+                        printf '%s\n' ./[0-9]* | sh
+                        sleep 10000
+                    fi
+                fi
+            fi
+        else
+            _COUNTER=$((_COUNTER+1))
+            if [ $_MESSAGE_SENT -eq 0 ] && [ $_COUNTER -eq 1 ]
+            then
+                echo "Waiting for the Metadata Service to become available."
+                _MESSAGE_SENT=1
+            elif [ $_MESSAGE_SENT -eq 1 ] && [ $_COUNTER -eq 5 ]
+            then
+                echo "Still waiting..."
+                _COUNTER=0
+            fi
+        fi
+        sleep 10
+    done
+}
+main

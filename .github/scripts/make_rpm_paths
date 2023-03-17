@@ -1,0 +1,23 @@
+#!/bin/sh
+# Based on data from https://docs.fedoraproject.org/en-US/packaging-guidelines/RPMMacros/
+rpmmap="s~^usr/include~%{_includedir}~;"
+rpmmap="${rpmmap};s~^usr/bin~%{_bindir}~"
+rpmmap="${rpmmap};s~^usr/sbin~%{_sbindir}~"
+if [ "${_BUILD_ARCH:-x64}" = "x64" ]
+then
+    rpmmap="${rpmmap};s~^usr/lib64~%{_libdir}~"
+    rpmmap="${rpmmap};s~^usr/lib~%{_prefix}/lib~"
+else
+    rpmmap="${rpmmap};s~^usr/lib64~%{_prefix}/lib64~"
+    rpmmap="${rpmmap};s~^usr/lib~%{_libdir}~"
+fi
+rpmmap="${rpmmap};s~^usr/libexec~%{_libexecdir}~"
+rpmmap="${rpmmap};s~^usr/share/info~%{_infodir}~"
+rpmmap="${rpmmap};s~^usr/share/man~%{_mandir}~"
+rpmmap="${rpmmap};s~^usr/share/doc~%{_docdir}~"
+rpmmap="${rpmmap};s~^usr/share~%{_datadir}~"
+rpmmap="${rpmmap};s~^usr~%{_prefix}~"
+rpmmap="${rpmmap};s~^run~%{_rundir}~"
+rpmmap="${rpmmap};s~^var/lib~%{_sharedstatedir}~"
+rpmmap="${rpmmap};s~^var~%{_localstatedir}~"
+strip_rpm_root "$1" | sed -E -e "$rpmmap"

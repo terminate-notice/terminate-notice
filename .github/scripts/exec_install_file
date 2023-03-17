@@ -1,0 +1,5 @@
+#!/bin/sh
+RPM_FILE="$(make_rpm_paths "$1")"
+LOCAL_FILE="$(strip_rpm_root "$1")"
+MODE="$(exec_install_file_mode "$LOCAL_FILE")"
+echo "install -D -m ${MODE} -o root -g root %{SOURCE0}${LOCAL_FILE} \${RPM_BUILD_ROOT}${RPM_FILE}"

@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "$1" | sed -E -e "s/SOURCES\///" | sed -E -e "s/${GITHUB_REPO_NAME}//"

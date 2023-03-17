@@ -1,0 +1,96 @@
+#!/usr/bin/sh
+# Example of how to use this function:
+# start_action action-name
+start_action() {
+    echo "Action $1 - INFO: Starting action" >&2
+}
+
+# Example of how to use this function:
+# debug core Your code reached this line
+# debug action-name The value of \$x is $x
+debug() {
+    if [ "${DEBUG:-0}" = "1" ]
+    then
+        _section=$1
+        shift
+        _message=$*
+        echo "DEBUG [$_section]: $_message" >&2
+    fi
+}
+
+# Example of how to use this function:
+# info the-action A thing just happened.
+info() {
+    if [ "${INFO:-1}" != "1" ]
+    then
+        _section=$1
+        shift
+        _message=$*
+        echo "INFO [$_section]: $_message" >&2
+    fi
+}
+
+# Example of how to use this function:
+# error 127 deathstar-run Theres... Too... Many... Of... Them
+error() {
+    _code=$1
+    shift
+    _section=$1
+    shift
+    _message=$*
+    echo "ERROR [$_section]: $_message"
+    exit "$_code"
+}
+
+# Example of how to use this function:
+# eval "$(load_config action-name)"
+load_config() {
+    if [ -f "/etc/terminate-notice.conf.d/$1.conf" ]
+    then
+        # shellcheck disable=SC1090
+        # shellcheck disable=SC1091
+        cat "/etc/terminate-notice.conf.d/$1.conf"
+        debug "${2:-$1} load_config" Loaded Config File "/etc/terminate-notice.conf.d/$1.conf"
+    else
+        error 1 "${2:-$1} load_config" ERROR: Unable to read "/etc/terminate-notice.conf.d/$1.conf"
+    fi
+}
+
+# Example of how to use this function:
+# if [ "$(first_of "$ENV_VAR" "$conf_value" "default")" = "desired state" ]
+# then
+#   do_something
+# fi
+first_of() {
+    for item in "$@"
+    do
+        if [ -n "$item" ]
+        then
+            echo "$item"
+            return 0
+        fi
+    done
+}
+
+get_hostname() {
+    static_hostname="$(hostnamectl status --static)"
+    transient_hostname="$(hostnamectl status --transient)"
+    pretty_hostname="$(hostnamectl status --pretty)"
+    if [ -n "$HOSTNAME" ]
+    then
+        echo "$HOSTNAME"
+    elif [ -n "$static_hostname" ] && echo "$static_hostname" | grep -qv 'localhost'
+    then
+        echo "$static_hostname"
+    elif [ -n "$transient_hostname" ] && echo "$transient_hostname" | grep -qv 'localhost'
+    then
+        echo "$transient_hostname"
+    elif [ -n "$pretty_hostname" ] && echo "$pretty_hostname" | grep -qv 'localhost'
+    then
+        echo "$pretty_hostname"
+    else
+        echo "MID_$(hostnamectl status | grep "Machine ID" | sed -E 's/[[:SPACE:]]+Machine ID:[[:SPACE:]]*//')"
+    fi
+}
+
+_HOSTNAME="$(get_hostname)"
