@@ -21,6 +21,17 @@
         "plugin",
         "tool"
       ]
+    },
+    {
+      "login": "mohclips",
+      "name": "mohclips",
+      "avatar_url": "https://avatars.githubusercontent.com/u/11463820?v=4",
+      "profile": "https://about.me/nicholascross",
+      "contributions": [
+        "ideas",
+        "mentoring",
+        "research"
+      ]
     }
   ],
   "contributorsPerLine": 7,
