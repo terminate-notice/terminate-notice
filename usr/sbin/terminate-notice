@@ -1,7 +1,7 @@
 #!/usr/bin/sh
 echo "Welcome to the terminate-notice polling service."
 echo "Version #TAG# - #TAG_DATE#"
-echo "Author: Jon Spriggs <jon@sprig.gs>"
+echo "Author: #MAINTAINER#"
 echo "Website: https://terminate-notice.github.io"
 
 # shellcheck disable=SC1091

@@ -13,6 +13,11 @@ jobs:
     name: Create Packages
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          path: "REPO"
+
       - name: Calculate some variables
         run: |
           (
@@ -22,15 +27,42 @@ jobs:
             echo "DEB_ARCHITECTURE=${ARCHITECTURE:-all}"
             echo "RPM_ARCHITECTURE=${ARCHITECTURE:-noarch}"
             echo "RELEASE=1"
+            cd REPO
+            echo "FIRST_YEAR=$(git log $(git rev-list --max-parents=0 HEAD) --date="format:%Y" --format="format:%ad")"
+            echo "THIS_COMMIT_YEAR=$(git log HEAD -n1 --date="format:%Y" --format="format:%ad")"
+            echo "THIS_COMMIT_DATE=$(git log HEAD -n1 --format="format:%as")"
+            if [ "$FIRST_YEAR" = "$THIS_COMMIT_YEAR" ]
+            then
+              echo "YEAR_RANGE=$FIRST_YEAR"
+            else
+              echo "YEAR_RANGE=${FIRST_YEAR}-${THIS_COMMIT_YEAR}"
+            fi
+            cd ..
           ) >> $GITHUB_ENV
 
       - name: Make Directory Structure
         run: mkdir -p "SOURCES/${GITHUB_REPO_NAME}" SPECS release
 
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          path: "SOURCES/${{ env.GITHUB_REPO_NAME }}"
+      - name: Copy script files into SOURCES
+        run: |
+          cp -Rf REPO/[a-z]* "SOURCES/${GITHUB_REPO_NAME}"
+          cp REPO/LICENSE REPO/README.md "SOURCES/${GITHUB_REPO_NAME}/usr/share/doc/${GITHUB_REPO_NAME}/"
+          if grep -lr '#TAG#' SOURCES
+          then
+            sed -i -e "s/#TAG#/${VERSION}/" $(grep -lr '#TAG#' SOURCES)
+          fi
+          if grep -lr '#TAG_DATE#' SOURCES
+          then
+            sed -i -e "s/#TAG_DATE#/${THIS_COMMIT_YEAR}/" $(grep -lr '#TAG_DATE#' SOURCES)
+          fi
+          if grep -lr '#DATE_RANGE#' SOURCES
+          then
+            sed -i -e "s/#DATE_RANGE#/${YEAR_RANGE}/" $(grep -lr '#DATE_RANGE#' SOURCES)
+          fi
+          if grep -lr '#MAINTAINER#' SOURCES
+          then
+            sed -i -e "s/#MAINTAINER#/${MAINTAINER:-Jon Spriggs <jon@sprig.gs>}/" $(grep -lr '#MAINTAINER#' SOURCES)
+          fi
 
       - name: Create Control File
         # Fields from https://www.debian.org/doc/debian-policy/ch-controlfields.html#binary-package-control-files-debian-control
@@ -56,7 +88,7 @@ jobs:
           (
             echo "Files:"
             echo " *"
-            echo "Copyright: 2023 Jon Spriggs"
+            echo "Copyright: ${YEAR_RANGE} ${MAINTAINER:-Jon Spriggs <jon@sprig.gs>}"
             echo "License: MIT"
             echo ""
             echo "License: MIT"
@@ -64,7 +96,7 @@ jobs:
           ) | tee SOURCES/${GITHUB_REPO_NAME}/DEBIAN/copyright
 
       - name: Create Spec File
-        run: PATH="SOURCES/${GITHUB_REPO_NAME}/.github/scripts:${PATH}" create_spec_file.sh
+        run: PATH="REPO/.github/scripts:${PATH}" create_spec_file.sh
 
       - name: Build DEB Package
         run: dpkg-deb --build SOURCES/${GITHUB_REPO_NAME} "${{ env.GITHUB_REPO_NAME }}_${{ env.VERSION }}_${{ env.DEB_ARCHITECTURE }}.deb"
