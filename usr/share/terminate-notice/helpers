@@ -60,10 +60,17 @@ load_config() {
     then
         # shellcheck disable=SC1090
         # shellcheck disable=SC1091
-        cat "/etc/terminate-notice.conf.d/$1.conf"
+        if cat "/etc/terminate-notice.conf.d/$1.conf"
+        then
         debug "${2:-$1} load_config" Loaded Config File "/etc/terminate-notice.conf.d/$1.conf"
+            echo "FAILED=0"
     else
-        error 1 "${2:-$1} load_config" ERROR: Unable to read "/etc/terminate-notice.conf.d/$1.conf"
+            debug "${2:-$1} load_config" ERROR: Unable to read "/etc/terminate-notice.conf.d/$1.conf"
+            echo "FAILED=1"
+        fi
+    else
+        debug "${2:-$1} load_config" ERROR: Unable to locate "/etc/terminate-notice.conf.d/$1.conf"
+        echo "FAILED=1"
     fi
 }
 
