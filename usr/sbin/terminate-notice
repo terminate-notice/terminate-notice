@@ -30,9 +30,15 @@ main() {
     # shellcheck disable=SC2154
     _TERMINATE_NOTICE_SCRIPTS="$(first_of "${TERMINATE_NOTICE_SCRIPTS}" "${terminate_notice_scripts}" "/usr/share/terminate-notice/actions")"
 
-    debug "Checking whether IMSv2 is available"
-    if curl -s -f -X PUT "${_METADATA_SERVICE}/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30" >/dev/null
+    debug "CORE" "Checking whether IMSv2 is available"
+    if IMSv_Status="$(curl -I -s -f -X PUT "${_METADATA_SERVICE}/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30")"
     then
+        debug "CORE" Using IMSv2
+        IMSv=2
+    else
+        debug "CORE" Using IMSv1 - ==REASON STARTS==
+        debug "CORE" "$IMSv_Status"
+        debug "CORE" ==REASON END==
         IMSv=1
     fi
 
