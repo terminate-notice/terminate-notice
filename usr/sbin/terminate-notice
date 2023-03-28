@@ -62,26 +62,58 @@ main() {
             _MESSAGE_SENT=0
             debug Checking with the Metadata Service to see whether there has been a termination notice
             if STATUS="$(
-                if [ "$IMSv" = "2" ]
-                then
-                       # Use that token to request the status of "instance-action"
-                       # /----------------------------------------------------------------- Silent (don't show download graphs)
-                       # |  /-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
-                       # |  |                                                                 There will be a 404 until stop/terminate.
-                       # |  |  /----------------------------------------------------------- Add this header
-                       # |  |  |   /------------------------------------------------------- The header requested before
-                       # |  |  |   |                                  /-------------------- The metadata endpoint to identify stop/terminate.
-                    curl -s -f -H "X-aws-ec2-metadata-token: $TOKEN" "${_METADATA_SERVICE}/meta-data/spot/instance-action"
-                else 
-                    curl -s -f "${_METADATA_SERVICE}/meta-data/spot/instance-action"
-                fi
-                       # |  |  \----------------------------------------------------------- The metadata endpoint to identify stop/terminate.
-                       # |  \-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
-                       # |                                                                    There will be a 404 until stop/terminate.
-                       # \----------------------------------------------------------------- Silent (don't show download graphs)
-                )"
+                (
+                    if [ "$IMSv" = "2" ]
+                    then
+                        # Use that token to request the status of "instance-action"
+                        # /----------------------------------------------------------------- Silent (don't show download graphs)
+                        # |  /-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                        # |  |                                                                 There will be a 404 until stop/terminate.
+                        # |  |  /----------------------------------------------------------- Add this header
+                        # |  |  |   /------------------------------------------------------- The header requested before
+                        # |  |  |   |                                  /-------------------- The metadata endpoint to identify stop/terminate.
+                        # |  |  |   |                                  | Or perform the next check -------------------------\
+                        curl --verbose -s -f -H "X-aws-ec2-metadata-token: $TOKEN" "${_METADATA_SERVICE}/meta-data/spot/instance-action" ||
+                        # Use that token to request the status of "rebalance-recommendation"
+                        # /----------------------------------------------------------------- Silent (don't show download graphs)
+                        # |  /-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                        # |  |                                                                 There will be a 404 until rebalance recommended.
+                        # |  |  /----------------------------------------------------------- Add this header
+                        # |  |  |   /------------------------------------------------------- The header requested before
+                        # |  |  |   |                                  /-------------------- The metadata endpoint to see rebalance recommendation.
+                        curl --verbose -s -f -H "X-aws-ec2-metadata-token: $TOKEN" "${_METADATA_SERVICE}/meta-data/events/recommendations/rebalance"
+                    else 
+                        # /----------------------------------------------------------------- Silent (don't show download graphs)
+                        # |  \-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                        # |  |                                                                 There will be a 404 until stop/terminate.
+                        # |  |  /----------------------------------------------------------- The metadata endpoint to identify stop/terminate.
+                        # |  |  |  Or perform the next check -------------------------\
+                        curl --verbose -s -f "${_METADATA_SERVICE}/meta-data/spot/instance-action" ||
+                        # /----------------------------------------------------------------- Silent (don't show download graphs)
+                        # |  \-------------------------------------------------------------- Fail for any 4xx and 5xx responses.
+                        # |  |                                                                 There will be a 404 until rebalance recommended.
+                        # |  |  /----------------------------------------------------------- The metadata endpoint to see rebalance recommendation.
+                        curl --verbose -s -f "${_METADATA_SERVICE}/meta-data/events/recommendations/rebalance"
+                    fi
+                ) 2>/dev/null
+            )"
             then
+                TERMINATE_NOTICE_RECEIVED=0
+                REBALANCE_RECOMMENDATION_RECEIVED=0
                 if echo "$STATUS" | grep -q -E "(stop|terminate)"
+                then
+                    debug "Poller" "Terminate Notice Received."
+                    debug "Poller" "STATUS: $STATUS"
+                    TERMINATE_NOTICE_RECEIVED=1
+                    export TERMINATE_NOTICE_RECEIVED
+                elif echo "$STATUS" | grep -q -E "noticeTime"
+                then
+                    debug "Poller" "Rebalance Recommendation Received."
+                    debug "Poller" "STATUS: $STATUS"
+                    REBALANCE_RECOMMENDATION_RECEIVED=1
+                    export REBALANCE_RECOMMENDATION_RECEIVED
+                fi
+                if [ "$TERMINATE_NOTICE_RECEIVED" -eq 1 ] || [ "$REBALANCE_RECOMMENDATION_RECEIVED" -eq 1 ]
                 then
                     if ! cd "${_TERMINATE_NOTICE_SCRIPTS}"
                     then
