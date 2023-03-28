@@ -42,6 +42,18 @@ info() {
 }
 
 # Example of how to use this function:
+# info the-action A thing just happened.
+warning() {
+    if [ "${WARNING:-1}" != "1" ]
+    then
+        _section=$1
+        shift
+        _message=$*
+        echo "WARNING [$_section]: $_message" >&2
+    fi
+}
+
+# Example of how to use this function:
 # error 127 deathstar-run Theres... Too... Many... Of... Them
 error() {
     _code=$1
@@ -62,9 +74,9 @@ load_config() {
         # shellcheck disable=SC1091
         if cat "/etc/terminate-notice.conf.d/$1.conf"
         then
-        debug "${2:-$1} load_config" Loaded Config File "/etc/terminate-notice.conf.d/$1.conf"
+            debug "${2:-$1} load_config" Loaded Config File "/etc/terminate-notice.conf.d/$1.conf"
             echo "FAILED=0"
-    else
+        else
             debug "${2:-$1} load_config" ERROR: Unable to read "/etc/terminate-notice.conf.d/$1.conf"
             echo "FAILED=1"
         fi
