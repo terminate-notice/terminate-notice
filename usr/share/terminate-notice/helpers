@@ -2,7 +2,18 @@
 # Example of how to use this function:
 # start_action action-name
 start_action() {
-    echo "Action $1 - INFO: Starting action" >&2
+    if [ "$VERIFY" != "1" ]
+    then
+        info "$1" Starting action
+    fi
+}
+
+verified() {
+    if [ "$VERIFY" = "1" ]
+    then
+        info "$1" All required variables loaded OK.
+        exit 0
+    fi
 }
 
 # Example of how to use this function:
