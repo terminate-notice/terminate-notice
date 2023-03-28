@@ -42,11 +42,12 @@ main() {
         IMSv=1
     fi
 
-    debug "Checking whether _TERMINATE_NOTICE_SCRIPTS ($_TERMINATE_NOTICE_SCRIPTS) are available"
+    debug "CORE" "Checking whether _TERMINATE_NOTICE_SCRIPTS ($_TERMINATE_NOTICE_SCRIPTS) are available"
     if ! cd "${_TERMINATE_NOTICE_SCRIPTS}"
     then
-        echo "WARNING: ${_TERMINATE_NOTICE_SCRIPTS} is unreachable."
+        warning "CORE" "${_TERMINATE_NOTICE_SCRIPTS} is unreachable."
     else
+        debug "CORE" "${_TERMINATE_NOTICE_SCRIPTS} are available."
         debug "CORE" Verifying scripts are all ready.
         VERIFY=1
         export VERIFY
@@ -56,7 +57,9 @@ main() {
 
     while true
     do
+        debug "Poller" LOOP
         # Ask the Metadata Service for a token with a lifetime of 21600 seconds (skip if no token yet available)
+        # But only if we've got IMSv1 set because the token service responded.
         #                                     /--------------------------------------------------------------------- Silent (don't show download graphs)
         #                                     |  /------------------------------------------------------------------ Fail for any 4xx and 5xx responses.
         #                                     |  |                                                                     The service may not respond until ifup.
@@ -68,7 +71,7 @@ main() {
         then
             _COUNTER=0
             _MESSAGE_SENT=0
-            debug Checking with the Metadata Service to see whether there has been a termination notice
+            debug "Poller" Checking with the Metadata Service to see whether there has been a termination notice
             if STATUS="$(
                 (
                     if [ "$IMSv" = "2" ]
@@ -135,6 +138,8 @@ main() {
                         sleep 10000
                     fi
                 fi
+            else
+                debug "Poller" "Nothing seen: $STATUS"
             fi
         else
             _COUNTER=$((_COUNTER+1))
