@@ -41,9 +41,11 @@ main() {
     then
         echo "WARNING: ${_TERMINATE_NOTICE_SCRIPTS} is unreachable."
     else
-        debug Testing scripts
-        pwd
-        printf '%s\n' ./[0-9]* | VERIFY=1 sh
+        debug "CORE" Verifying scripts are all ready.
+        VERIFY=1
+        export VERIFY
+        printf '%s\n' ./[0-9]* | sh
+        unset VERIFY
     fi
 
     while true
