@@ -1,6 +1,7 @@
 #!/bin/sh
 # Based on data from https://docs.fedoraproject.org/en-US/packaging-guidelines/RPMMacros/
 rpmmap="s~^usr/include~%{_includedir}~;"
+rpmmap="${rpmmap};s~^etc~%{_sysconfdir}~"
 rpmmap="${rpmmap};s~^usr/bin~%{_bindir}~"
 rpmmap="${rpmmap};s~^usr/sbin~%{_sbindir}~"
 if [ "${_BUILD_ARCH:-x64}" = "x64" ]
