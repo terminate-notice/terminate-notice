@@ -37,7 +37,7 @@ info() {
         _section=$1
         shift
         _message=$*
-        echo "INFO [$_section]: $_message" >&2
+        echo "INFO [$_section]: $_message"
     fi
 }
 
