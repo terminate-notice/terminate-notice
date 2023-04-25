@@ -7,6 +7,23 @@ echo "Website: https://terminate-notice.github.io"
 # shellcheck disable=SC1091
 . /usr/share/terminate-notice/helpers
 
+run_actions() {
+    for TENS in $(seq 0 9)
+    do
+        for UNITS in $(seq 0 9)
+        do
+            for ACTION_NAME in ${TENS}${UNITS}*
+            do
+                if [ -e "$ACTION_NAME" ]
+                then
+                    debug "CORE_run_actions()" "Executing Action $ACTION_NAME"
+                    sh "$ACTION_NAME"
+                fi
+            done
+        done
+    done
+}
+
 main() {
     _COUNTER=0
     _MESSAGE_SENT=0
@@ -17,6 +34,7 @@ main() {
     unset terminate_notice_scripts
     
     eval "$(load_config service CORE)"
+    export DEBUG
 
     debug "CORE" Parsing METADATA_SERVICE values
     
@@ -51,7 +69,7 @@ main() {
         debug "CORE" Verifying scripts are all ready.
         VERIFY=1
         export VERIFY
-        printf '%s\n' ./[0-9]* | sh
+        run_actions
         unset VERIFY
     fi
 
@@ -134,7 +152,7 @@ main() {
                         sleep 5
                         shutdown -h +1
                     else
-                        printf '%s\n' ./[0-9]* | sh
+                        run_actions
                         sleep 10000
                     fi
                 fi
