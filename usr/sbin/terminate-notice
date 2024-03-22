@@ -12,7 +12,7 @@ run_actions() {
     do
         for UNITS in $(seq 0 9)
         do
-            for ACTION_NAME in ${TENS}${UNITS}*
+            for ACTION_NAME in "${TENS}${UNITS}"*
             do
                 if [ -e "$ACTION_NAME" ]
                 then
@@ -47,6 +47,10 @@ main() {
     # shellcheck disable=SC2153
     # shellcheck disable=SC2154
     _TERMINATE_NOTICE_SCRIPTS="$(first_of "${TERMINATE_NOTICE_SCRIPTS}" "${terminate_notice_scripts}" "/usr/share/terminate-notice/actions")"
+
+    # shellcheck disable=SC2153
+    # shellcheck disable=SC2154
+    _HANDLE_REBALANCE_AS_TERMINATE="$(first_of "${HANDLE_REBALANCE_AS_TERMINATE}" "${handle_rebalance_as_terminate}" "no")"
 
     debug "CORE" "Checking whether IMSv2 is available"
     if IMSv_Status="$(curl -I -s -f -X PUT "${_METADATA_SERVICE}/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 30")"
@@ -142,7 +146,15 @@ main() {
                     REBALANCE_RECOMMENDATION_RECEIVED=1
                     export REBALANCE_RECOMMENDATION_RECEIVED
                 fi
-                if [ "$TERMINATE_NOTICE_RECEIVED" -eq 1 ] || [ "$REBALANCE_RECOMMENDATION_RECEIVED" -eq 1 ]
+                do_run_actions=0
+                if [ "$TERMINATE_NOTICE_RECEIVED" -eq 1 ]
+                then
+                    do_run_actions=1
+                elif [ "$REBALANCE_RECOMMENDATION_RECEIVED" -eq 1 ] && [ "$_HANDLE_REBALANCE_AS_TERMINATE" = "yes" ]
+                then
+                    do_run_actions=1
+                fi
+                if [ "$do_run_actions" -eq 1 ]
                 then
                     if ! cd "${_TERMINATE_NOTICE_SCRIPTS}"
                     then
